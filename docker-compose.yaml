@@ -2,8 +2,7 @@ version: "3.7"
 services:
 
   arista-eapi-exporter:
-    #image: enix/arista-eapi-exporter
-    build: .
+    image: enix/arista-eapi-exporter
     command: ["multiple", "-c", "/arista-eapi-exporter/config.yaml"]
     ports:
       - 9100:9100
