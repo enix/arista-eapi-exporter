@@ -135,7 +135,7 @@ def main():  # pylint: disable=missing-function-docstring
     if args.kind == "single" and args.target is None:
         if args.socket == "unix":
             args.target = "http+unix://%2Fvar%2Frun%2Fcommand-api.sock/command-api"
-        elif args.socker == "ip":
+        elif args.socket == "ip":
             args.target = "http://127.0.0.1:8080/command-api"
 
     # Disable unverified certificate warning. If we request a self-signed API, that's on purpose
