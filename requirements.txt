@@ -1,0 +1,4 @@
+requests
+requests-unixsocket
+prometheus_client
+pyyaml

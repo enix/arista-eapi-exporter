@@ -1,0 +1,64 @@
+commands:
+  show version:
+    type: flat
+    metrics:
+      - name: memFree
+      - name: memTotal
+  show interfaces:
+    type: multiple
+    key: interfaces
+    metrics:
+      - name: bandwidth
+      - name: interfaceCounters.inBroadcastPkts
+      - name: interfaceCounters.inDiscards
+      - name: interfaceCounters.inMulticastPkts
+      - name: interfaceCounters.inOctets
+      - name: interfaceCounters.inTotalPkts
+      - name: interfaceCounters.inUcastPkts
+      - name: interfaceCounters.inputErrorsDetail.alignmentErrors
+      - name: interfaceCounters.inputErrorsDetail.fcsErrors
+      - name: interfaceCounters.inputErrorsDetail.giantFrames
+      - name: interfaceCounters.inputErrorsDetail.runtFrames
+      - name: interfaceCounters.inputErrorsDetail.rxPause
+      - name: interfaceCounters.inputErrorsDetail.symbolErrors
+      - name: interfaceCounters.linkStatusChanges
+      - name: interfaceCounters.outBroadcastPkts
+      - name: interfaceCounters.outDiscards
+      - name: interfaceCounters.outMulticastPkts
+      - name: interfaceCounters.outOctets
+      - name: interfaceCounters.outUcastPkts
+      - name: interfaceCounters.outputErrorsDetail.collisions
+      - name: interfaceCounters.outputErrorsDetail.deferredTransmissions
+      - name: interfaceCounters.outputErrorsDetail.lateCollisions
+      - name: interfaceCounters.outputErrorsDetail.txPause
+      - name: interfaceCounters.totalInErrors
+      - name: interfaceCounters.totalOutErrors
+      - name: interfaceStatus
+        type: mapping
+        mapping:
+          uninitialized: 0
+          maint-down: 1
+          admin: 2
+          unknown: 3
+          notconnect: 4
+          disabled: 5
+          inactive: 6
+          connected: 7
+          errdisabled: 8
+      - name: lineProtocolStatus
+        type: mapping
+        mapping:
+          dormant: 0
+          lowerLayerDown: 1
+          unknown: 2
+          testing: 3
+          up: 4
+          down: 5
+          notPresent: 6
+      - name: mtu
+    labels:
+      - name: name
+        prom_name: interface_name
+      - name: description
+
+
