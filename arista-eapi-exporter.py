@@ -84,7 +84,7 @@ def main():  # pylint: disable=missing-function-docstring
         "-t",
         "--target",
         default=None,
-        help="Target URL. Defaults to 'http://127.0.0.1:8080/command-api' or 'http+unix://%%2Fvar%%2Frun%%2Fcommand-api.sock/command-api' depending on the socket type.",
+        help="Target URL. Defaults to 'https://172.17.0.1/command-api' or 'http+unix://%%2Fvar%%2Frun%%2Fcommand-api.sock/command-api' depending on the socket type.",
     )
     parser_single.add_argument(
         "-u",
@@ -136,7 +136,7 @@ def main():  # pylint: disable=missing-function-docstring
         if args.socket == "unix":
             args.target = "http+unix://%2Fvar%2Frun%2Fcommand-api.sock/command-api"
         elif args.socket == "ip":
-            args.target = "http://127.0.0.1:8080/command-api"
+            args.target = "https://172.17.0.1/command-api"
 
     # Disable unverified certificate warning. If we request a self-signed API, that's on purpose
     disable_warnings(InsecureRequestWarning)
