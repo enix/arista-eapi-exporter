@@ -6,7 +6,7 @@ commands:
       - name: memTotal
   show interfaces:
     type: multiple
-    key: interfaces
+    lookup_keys: interfaces
     metrics:
       - name: bandwidth
       - name: interfaceCounters.inBroadcastPkts
@@ -60,5 +60,36 @@ commands:
       - name: name
         prom_name: interface_name
       - name: description
+  show ip bgp summary:
+    type: multiple
+    lookup_keys: ['vrfs', 'peers']
+    metrics:
+      - name: prefixReceived
+      - name: msgSent
+      - name: inMsgQueue
+      - name: msgReceived
+      - name: prefixAccepted
+      - name: peerState
+        type: mapping
+        mapping:
+          Established: 0
+          OpenConfirm: 1
+          NotNegotiated: 2
+          OpenSent: 3
+          Idle: 4
+          Connect: 5
+          Active: 6
+      - name: outMsgQueue
+    labels:
+      - name: version
+      - name: asn
+      - name: peers
+        prom_name: peer
+        special: metadata
+      - name: vrfs
+        prom_name: vrf
+        special: metadata
+  
+
 
 

@@ -43,6 +43,63 @@ def get_metric_prom_name(command, metric_path):
     return PROM_PREFIX + command.replace(" ", "_") + "_" + metric_path.replace(".", "_")
 
 
+def flatten_eapi_response(lookup_keys, result, flattened_result, metadata=None):
+    """
+    Recursively update a list, `flattened_result` by going through the nested dict `result` via each level specified
+    in `lookup key`.
+    At each level, loop through all items (such as VRFs or interfaces), and register their identifiers in `metadata`.
+
+    Here is an example of what this function would have to process :
+
+    lookup_keys = ['vrfs', 'peers']
+
+    result = {'vrfs':
+                {'default':
+                    {'peers':
+                        {'192.168.1.1': {'prefixReceived': 10,
+                                         'msgSent': 1,
+                                         'asn': 1234},
+                         '192.168.1.2': {'prefixReceived': 20,
+                                         'msgSent': 2,
+                                         'asn': 1234}},
+                    }
+                }
+             }
+
+    The content of `flattened_result` after calling this function would be :
+
+    [
+        {'metadata': {'vrfs': 'default', 'peers': '192.168.1.1'},
+        'data': {'prefixReceived': 10, 'msgSent': 1, 'asn': 1234}},
+
+        {'metadata': {'vrfs': 'default', 'peers': '192.168.1.2'},
+        'data': {'prefixReceived': 20, 'msgSent': 2, 'asn': 1234}}
+    ]
+
+    """
+
+    if metadata is None:  # Root call, initialize metadata
+        metadata = {}
+
+    # Loop through each of the item of the current depth level
+    for item_name, item_value in result[lookup_keys[0]].items():
+
+        # Extract this level's metadata (vrf name, peer IP, etc.)
+        metadata[lookup_keys[0]] = item_name
+
+        if len(lookup_keys) != 1:
+            # We are not at the last lookup key, go one level deeper
+            flatten_eapi_response(
+                lookup_keys[1:], item_value, flattened_result, copy.deepcopy(metadata)
+            )
+
+        else:
+            # We are at the last lookup key, here is the interesting data
+            flattened_result.append(
+                {"metadata": copy.deepcopy(metadata), "data": item_value}
+            )
+
+
 def main():  # pylint: disable=missing-function-docstring
     signal(SIGTERM, terminate)
 
@@ -396,7 +453,7 @@ def main():  # pylint: disable=missing-function-docstring
 
             # Break down the response list and correlate each one to its command/metric
             for index, command in enumerate(command_list):
-                result = responses[index]
+                command_result = responses[index]
                 command_definition = api_commands["commands"][command]
 
                 try:
@@ -407,29 +464,48 @@ def main():  # pylint: disable=missing-function-docstring
                     ) from exc
 
                 if command_type == "multiple":
+                    # A command that returns data in multiple levels of nesting, for instance `show ip bgp summary`
+                    # returns data per peer, per VRF
                     try:
-                        lookup_key = command_definition["key"]
+                        lookup_keys = command_definition["lookup_keys"]
                     except KeyError as exc:
                         raise ValueError(
-                            f"Command '{command}' of type 'multiple' should have a 'key' attribute"
+                            f"Command '{command}' of type 'multiple' should have a 'lookup_keys' attribute"
                         ) from exc
 
-                    try:
-                        result_items = result[lookup_key]
-                    except KeyError as exc:
+                    if isinstance(lookup_keys, str):
+                        lookup_keys = [lookup_keys]
+
+                    if not isinstance(lookup_keys, list):
                         raise ValueError(
-                            f"Return value for command '{command}' on target '{target['name']}' did not contain a '{lookup_key}' attribute, but this instead :{result.keys()}"
+                            f"'lookup_keys' for command '{command}' should be either a string or a list of strings. Got {repr(lookup_keys)} (type {type(lookup_keys)}) instead."
+                        )
+
+                    # Flatten the JSON output, i.e. all elements of the nested response in a single list, along with their
+                    # metadata (vrf name and peer IP, in our example)
+                    flattened_result = []
+                    try:
+                        flatten_eapi_response(
+                            lookup_keys, command_result, flattened_result
+                        )
+                    except KeyError as exc:
+                        _, exc_value, _ = sys.exc_info()
+                        raise ValueError(
+                            f"Returned data for command '{command}' on target '{target['name']}' did not contain a {exc_value} key. Please check API response or lookup keys '{lookup_keys}'."
                         )
                 elif command_type == "flat":
-                    # Fake a one-item dict for flat API response so that the rest of the processing is the same
-                    result_items = {"": result}
+                    # A command that returns data with exploitable values directly at the first level. E.g. `show version`
+                    # Fake a one-item list with empty metadata for flat API response so that the rest of the processing is the same
+                    flattened_result = [{"data": command_result, "metadata": {}}]
                 else:
                     raise ValueError(
                         f"Unknown command type '{command_type}' for command '{command}'"
                     )
 
                 # Look through all the items (interfaces, VLANs, etc) the API gave us
-                for key, data in result_items.items():
+                for result in flattened_result:
+                    data = result["data"]
+                    metadata = result["metadata"]
 
                     # Extract metric-level label values such as interfaces names, comments, etc. depending on
                     # which API command we are passing.
@@ -439,8 +515,11 @@ def main():  # pylint: disable=missing-function-docstring
                         label_prom_name = label.get("prom_name", label["name"])
 
                         special = label.get("special")  # Is this a "meta-label" ?
-                        if special == "key":
-                            extracted_labels[label_prom_name] = key
+                        if special == "metadata":
+                            # This label will contain metadata extracted when we flattened the eAPI response.
+                            extracted_labels[label_prom_name] = metadata.get(
+                                label["name"], ""
+                            )
                         else:  # Just a normal non-meta plain old label
                             # If the label value is not present in the API response, default to ""
                             extracted_labels[label_prom_name] = data.get(
@@ -461,9 +540,10 @@ def main():  # pylint: disable=missing-function-docstring
                                 metric_data = metric_data[step]
                         except KeyError:
                             logger.debug(
-                                "Result for '%s' ('%s') do not contain an attribute named '%s'",
+                                "Result for '%s' on target %s ('%s') do not contain an attribute named '%s'",
                                 command,
-                                key,
+                                target["name"],
+                                metadata,
                                 step,
                             )
                             continue  # If the item does not contain our desired metric, just skip it
