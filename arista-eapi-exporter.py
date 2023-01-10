@@ -31,7 +31,6 @@ REQUEST_BODY = {
 
 logging.basicConfig(stream=sys.stdout)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def terminate(*_):  # pylint: disable=missing-function-docstring
@@ -56,6 +55,16 @@ def main():  # pylint: disable=missing-function-docstring
         "--api-commands",
         default="/etc/arista-eapi-exporter/api_commands.yaml",
         help="YAML config file containing API commands to execute and what metrics to export",
+    )
+
+    parser.add_argument(
+        "-d",
+        "--debug",
+        help="Display debugging statements",
+        action="store_const",
+        dest="loglevel",
+        const=logging.DEBUG,
+        default=logging.INFO,
     )
 
     subparsers = parser.add_subparsers(dest="kind")
@@ -130,6 +139,8 @@ def main():  # pylint: disable=missing-function-docstring
     )
 
     args = parser.parse_args()
+
+    logger.setLevel(args.loglevel)
 
     # Custom default for target, when in single mode
     if args.kind == "single" and args.target is None:
