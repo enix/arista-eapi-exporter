@@ -168,7 +168,7 @@ If you run the exporter using the integrated Docker engine, `container-manager`,
 
 ## API commands and metrics
 
-Every `show` command passed to the eAPI its resulting Prometheus metrics is defined in the YAML files passed as `-a` or `--api-commands` (by default the exporter will look in `/etc/arista-eapi-exporter/api_commands.yaml`).
+Every `show` command passed to the eAPI and its resulting Prometheus metrics is defined in the YAML files passed as `-a` or `--api-commands` (by default the exporter will look in `/etc/arista-eapi-exporter/api_commands.yaml`).
 
 All commands present in this file are queried in a single API call.
 
