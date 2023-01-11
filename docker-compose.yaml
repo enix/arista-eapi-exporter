@@ -3,7 +3,6 @@ services:
 
   arista-eapi-exporter:
     image: enix/arista-eapi-exporter
-    command: ["multiple", "-c", "/arista-eapi-exporter/config.yaml"]
     ports:
       - 9100:9100
     volumes:

@@ -11,4 +11,4 @@ COPY ./* ./
 EXPOSE 9100/tcp
 
 ENTRYPOINT ["python", "/arista-eapi-exporter/arista-eapi-exporter.py", "-a", "/arista-eapi-exporter/api_commands.yaml"]
-CMD ["single", "-s", "unix"]
+CMD ["multiple", "-c", "/arista-eapi-exporter/config.yaml"]
