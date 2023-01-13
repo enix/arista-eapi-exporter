@@ -370,6 +370,13 @@ def main():  # pylint: disable=missing-function-docstring
     exported_metrics[PROM_PREFIX + "api_unreachable"] = Counter(
         PROM_PREFIX + "api_unreachable", "Number of failed API requests", host_labels
     )
+    # Do a first sweep on all targets to set `api_unreachable` to 0
+    for target in targets:
+        # Extract host-level labels with their values
+        target_labels = {}
+        for label in host_labels:
+            target_labels[label] = target[label]
+        exported_metrics[PROM_PREFIX + "api_unreachable"].labels(**target_labels).inc(0)
 
     # Let's roll baby !
     logger.info("Starting the HTTP server on port %s", prom_port)
