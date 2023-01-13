@@ -230,9 +230,59 @@ commands:
       - name: memTotal
 ```
 
+#### Table
+
+Some commands, often displayed as a table in the CLI, return useful information in a list such as `show hardware capacity`
+
+```json
+{
+    "tables": [
+        {
+            "highWatermark": 1898,
+            "used": 1884,
+            "usedPercent": 22,
+            "committed": 0,
+            "table": "Routing",
+            "chip": "Jericho",
+            "maxLimit": 8192,
+            "feature": "Resource1",
+            "free": 6308
+        },
+        {
+            "highWatermark": 749276,
+            "used": 747163,
+            "usedPercent": 95,
+            "committed": 0,
+            "table": "LEM",
+            "chip": "Jericho0",
+            "maxLimit": 786432,
+            "feature": "",
+            "free": 39269
+        }
+    ]
+}
+```
+
+The corresponding *API command* looks like this :
+
+```yaml
+  show hardware capacity:
+    type: table
+    lookup_key: tables
+    metrics:
+      - name: used
+      - name: maxLimit
+      - name: highWatermark
+    labels:
+      - name: table
+      - name: feature
+      - name: chip
+```
+The list is contained in a dictionary item, so the exporter expects a string `lookup_key` to know where to find it.
+
 #### Multiple
 
-Some commands return information as a listing, or more specifically a dictionary of elements such as interfaces, VLANs, etc.
+Some commands return information as a dictionary of elements such as interfaces, VLANs, etc.
 These can be nested, as in `show ip bgp summary`:
 
 ```json

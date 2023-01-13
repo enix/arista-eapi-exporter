@@ -500,10 +500,20 @@ def main():  # pylint: disable=missing-function-docstring
                         raise ValueError(
                             f"Returned data for command '{command}' on target '{target['name']}' did not contain a {exc_value} key. Please check API response or lookup keys '{lookup_keys}'."
                         )
+
                 elif command_type == "flat":
                     # A command that returns data with exploitable values directly at the first level. E.g. `show version`
                     # Fake a one-item list with empty metadata for flat API response so that the rest of the processing is the same
                     flattened_result = [{"data": command_result, "metadata": {}}]
+
+                elif command_type == "list":
+                    # A command that returns data under a list (more accurately a dict with one item being a list, so we need a lookup key)
+                    # We just need to extract each element and put it under "data"
+                    flattened_result = [
+                        {"data": i, "metadata": {}}
+                        for i in command_result[command_definition["lookup_key"]]
+                    ]
+
                 else:
                     raise ValueError(
                         f"Unknown command type '{command_type}' for command '{command}'"

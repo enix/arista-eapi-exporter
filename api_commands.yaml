@@ -89,7 +89,14 @@ commands:
       - name: vrfs
         prom_name: vrf
         special: metadata
-  
-
-
-
+  show hardware capacity:
+    type: list
+    lookup_key: tables
+    metrics:
+      - name: used
+      - name: maxLimit
+      - name: highWatermark
+    labels:
+      - name: table
+      - name: feature
+      - name: chip
