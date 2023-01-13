@@ -23,7 +23,7 @@ REQUEST_BODY = {
     "method": "runCmds",
     "id": 1,
     "params": {
-        "version": 1,
+        "version": "latest",
         "cmds": None,
     },
 }
