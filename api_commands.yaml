@@ -92,6 +92,9 @@ commands:
       - name: dynamicPolicy
       - name: internal
       - name: ospfCounts.ospfTotal
+      - name: maskLen
+        type: buckets
+        bucket_name: prefix_length
     labels:
       - name: vrfs
         prom_name: vrf

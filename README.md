@@ -437,6 +437,44 @@ A `mapping` metric looks like this:
 arista_show_ip_bgp_summary_peerState{hostname="198.51.100.1",name="router-1.example.com",peer="192.168.1.1",vrf="default"} 6.0
 ```
 
+#### Buckets
+
+```yaml
+  show ip route vrf all summary:
+    type: multiple
+    lookup_keys: vrfs
+    metrics:
+      - name: maskLen
+        type: buckets
+        bucket_name: prefix_length
+```
+
+Some data are spread out in a histogram kind of way. This is the case with the `maskLen` metric of `show ip route summary` 
+which show number of routes spread out per mask length:
+
+```json
+{
+    "vrfs": {
+        "default": {
+            "maskLen": {
+                "8": 2,
+                "31": 19,
+                "32": 25
+            }
+        }
+    }
+}
+```
+
+Instead of going through every possible metric from `- name: maskLen.0` up to `- name: masklen.32`, a metric of type `buckets`
+with a `bucket_name` will automatically produce metrics for every possible values represented as labels, like this :
+
+```
+arista_show_ip_route_vrf_all_summary_maskLen{hostname="198.51.100.1",name="router-1.example.com",prefix_length="8"} 2.0
+arista_show_ip_route_vrf_all_summary_maskLen{hostname="198.51.100.1",name="router-1.example.com",prefix_length="31"} 19.0
+arista_show_ip_route_vrf_all_summary_maskLen{hostname="198.51.100.1",name="router-1.example.com",prefix_length="32"} 25.0
+```
+
 ### Labels
 
 #### prom_name

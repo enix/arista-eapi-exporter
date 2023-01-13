@@ -363,6 +363,14 @@ def main():  # pylint: disable=missing-function-docstring
                     labelnames=host_labels + normalized_labels,
                     states=metric["enum"],
                 )
+            elif metric_type == "buckets":
+                exported_metrics[metric_name] = Gauge(
+                    metric_name,
+                    f"Arista EOS metric '{metric['name']}' under '{command}'",
+                    labelnames=host_labels
+                    + normalized_labels
+                    + [metric["bucket_name"]],
+                )
 
     # This will hold each set of label:value ("labelset") PREVIOUSLY KNOWN for each metric. At each poll cycle, it will be compared
     # with the retrieved label:value set, in order to remove the no-longer-valid ones.
@@ -575,10 +583,12 @@ def main():  # pylint: disable=missing-function-docstring
                             exported_metrics[metric_name].labels(
                                 **extracted_labels
                             ).set(metric_data)
+
                         elif metric_type == "enum":
                             exported_metrics[metric_name].labels(
                                 **extracted_labels
                             ).state(metric_data)
+
                         elif metric_type == "mapping":
                             mapped_value = metric["mapping"].get(metric_data)
                             if mapped_value is None:
@@ -593,6 +603,13 @@ def main():  # pylint: disable=missing-function-docstring
                             exported_metrics[metric_name].labels(
                                 **extracted_labels
                             ).set(mapped_value)
+
+                        elif metric_type == "buckets":
+                            for bucket_value, bucket_data in metric_data.items():
+                                bucket = {metric["bucket_name"]: bucket_value}
+                                exported_metrics[metric_name].labels(
+                                    **extracted_labels, **bucket
+                                ).set(bucket_data)
 
                         labelsets_current[metric_name].append(extracted_labels)
 
