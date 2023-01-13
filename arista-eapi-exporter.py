@@ -40,7 +40,12 @@ def terminate(*_):  # pylint: disable=missing-function-docstring
 
 def get_metric_prom_name(command, metric_path):
     "From the API command, and the metric path inside the API response, return a suitable name for Prometheus"
-    return PROM_PREFIX + command.replace(" ", "_") + "_" + metric_path.replace(".", "_")
+    return (
+        PROM_PREFIX
+        + command.replace(" ", "_")
+        + "_"
+        + metric_path.translate(str.maketrans("", "", "%()")).replace(".", "_")
+    )
 
 
 def flatten_eapi_response(lookup_keys, result, flattened_result, metadata=None):
