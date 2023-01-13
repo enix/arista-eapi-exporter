@@ -1,9 +1,21 @@
 commands:
+  show processes top once:
+    type: flat
+    metrics:
+      - name: cpuInfo.%Cpu(s).idle
+      - name: cpuInfo.%Cpu(s).stolen
+      - name: cpuInfo.%Cpu(s).user
+      - name: cpuInfo.%Cpu(s).swIrq
+      - name: cpuInfo.%Cpu(s).ioWait
+      - name: cpuInfo.%Cpu(s).system
+      - name: cpuInfo.%Cpu(s).hwIrq
+      - name: cpuInfo.%Cpu(s).nice
   show version:
     type: flat
     metrics:
       - name: memFree
       - name: memTotal
+      - name: uptime
   show interfaces:
     type: multiple
     lookup_keys: interfaces
@@ -60,6 +72,30 @@ commands:
       - name: name
         prom_name: interface_name
       - name: description
+  show ip route vrf all summary:
+    type: multiple
+    lookup_keys: vrfs
+    metrics:
+      - name: totalRoutes
+      - name: ospfv3Counts.ospfv3Total
+      - name: staticNexthopGroup
+      - name: bgpCounts.bgpTotal
+      - name: attached
+      - name: gribi
+      - name: staticNonPersistent
+      - name: staticPersistent
+      - name: vcs
+      - name: connected
+      - name: rip
+      - name: isisCounts.isisTotal
+      - name: aggregate
+      - name: dynamicPolicy
+      - name: internal
+      - name: ospfCounts.ospfTotal
+    labels:
+      - name: vrfs
+        prom_name: vrf
+        special: metadata
   show ip bgp summary:
     type: multiple
     lookup_keys: ['vrfs', 'peers']
