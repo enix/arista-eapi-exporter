@@ -28,6 +28,26 @@ You should also customize the host labels configured using `-l name value`.
 Please keep in mind that these commands enable an HTTPS API server that will be reachable from outside your switch (if you do not set up any ACL).
 There are other options (namely, UNIX socket and local HTTP server) but they pose other issues ([see below](#unix-socket)).
 
+## How does this compare to ocprometheus or other exporters
+
+When it comes to setting up a Prometheus exporter for Arista switches, there are several other
+options, even some from Arista itself (such as [ocprometheus](https://github.com/aristanetworks/goarista/tree/master/cmd/ocprometheus)) you can consider.
+The main goal this exporter tries to achieve is to allow users to customize by themselves which metrics
+is gathered from the target, without having to fork the repository and alter the code.
+
+The use-case may be to add a metric to retrieve an obscure counter from a rarely-used
+feature, or to remove unneeded metrics to reduce the load on both the Arista device and the
+Prometheus server.
+
+This design goal drove two main technical choices for this exporter :
+- Use the eAPI, rather than gNMI or even the SysDB directly. The eAPI is largely documented
+and very easy to tinker with.
+- Use a separated "configuration" YAML file for the eAPI-to-metrics translation.
+
+See [API commands and metrics](#api-commands-and-metrics) for more details.
+
+Also, Docker is officially supported for deploying the exporter in a matter of minutes (if you do not need any customization).
+
 ## Usage and modes of operation
 
 ```
@@ -47,7 +67,9 @@ options:
 ```
 
 The correspondance between commands passed to the eAPI and exposed by the exporter can be configured in the YAML file passed
-to `--api-commands`. The provided `api_commands.yaml` contains a decent starting set of metrics that can be easily customized if needed.
+to `--api-commands`. There is [a dedicated section](#api-commands-and-metrics) on this page of how this file is structured.
+
+The provided `api_commands.yaml` contains a decent starting set of metrics that can be easily customized if needed.
 It is the one embedded in the publicly available Docker images.
 
 This exporter can operate in two different modes of operation : *multiple* and *single* 
@@ -140,7 +162,7 @@ options:
 
 In single mode, the exporter only polls one Arista device, but all the connection parameters can be provided using CLI arguments. This is useful if you want to deploy the exporter directly on your switches, leveraging Arista's Linux platform or Docker integration.
 
-In this mode, the exporter can connect to the eAPI using either a classic IP socker, or an UNIX socket
+In this mode, the exporter can connect to the eAPI using either a classic IP socket, or an UNIX socket
 
 #### IP socket
 
@@ -181,14 +203,20 @@ commands:
     lookup_keys: interfaces  # Specific to type `multiple`, see below
     metrics:  # Values to extract from the JSON response and expose as a Prometheus metric
       - name: bandwidth
-    labels:  # Valuses to extract from the JSON response and expose as metric labels
+    labels:  # Values to extract from the JSON response and expose as metric labels
       - name: name
         prom_name: interface_name
       - name: description
 ```
 
 You can look at what the eAPI response looks like directly from the device's CLI by appending `| json` to your show command, e.g. `show interfaces | json`.
-Alternatively, if the eAPI is reachable from your computer, you can browse the eAPI and have a look at the returned JSON data using the built-in API explorer by visiting `https://SWITCH_IP/explorer.html`.  
+
+Alternatively, if the eAPI is reachable from your computer, you can browse the eAPI and have a look at the returned JSON data using the built-in API explorer by visiting `https://SWITCH_IP/explorer.html`.
+
+However, please keep in mind that this exporter uses the latest revision of the eAPI command outputs.
+It is the same as the `| json` CLI output but if you use the explorer (or craft your own API requests),
+you need to set `version` to `latest` instead of the default `1`.
+
 
 ### Command types
 
@@ -429,6 +457,7 @@ commands:
 Also suitable for API response with text value, maybe easier than an `enum` to integrate into a Grafana dashboard, creates one metric of type Gauge, where each possible value is represented by a different integer. These text-to-integer mappings are defined in `mapping`.
 
 To know every possible value of such metric, go to https://www.arista.com/en/support/software-download and look for a file named `CommandApiGuide.pdf` in your version of EOS (or one close to it).
+You may also find the information in the documentation embedded into the eAPI explorer directly on your device.
 
 A `mapping` metric looks like this:
 ```
@@ -449,7 +478,7 @@ arista_show_ip_bgp_summary_peerState{hostname="198.51.100.1",name="router-1.exam
         bucket_name: prefix_length
 ```
 
-Some data are spread out in a histogram kind of way. This is the case with the `maskLen` metric of `show ip route summary` 
+Some data is spread out in a histogram kind of way. This is the case with the `maskLen` metric of `show ip route summary` 
 which show number of routes spread out per mask length:
 
 ```json
@@ -467,7 +496,7 @@ which show number of routes spread out per mask length:
 ```
 
 Instead of going through every possible metric from `- name: maskLen.0` up to `- name: masklen.32`, a metric of type `buckets`
-with a `bucket_name` will automatically produce metrics for every possible values represented as labels, like this :
+with a `bucket_name` will automatically produce metrics for every possible values, represented as labels, like this :
 
 ```
 arista_show_ip_route_vrf_all_summary_maskLen{hostname="198.51.100.1",name="router-1.example.com",prefix_length="8"} 2.0
@@ -534,7 +563,7 @@ commands:
         special: metadata
 ```
 
-A special label of kind `metadata` can be used, in conjunction with a `multiple` metric, to expose information gathered when descending into the nested dictionnaries.
+A special label of kind `metadata` can be used, in conjunction with a `multiple` metric, to expose information gathered when descending into the nested dictionaries.
 The label's `name` must be a lookup key, and since the eAPI uses the plural form, a `prom_name` is often useful for the label to have meaning.
 
 Given the JSON example [shown above](#multiple-1), the metrics would look like this :
@@ -552,11 +581,11 @@ This exporter also generate one metric, `arista_api_unreachable`, which is a cou
 
 ### Building an image
 
-You can build and run a docker image of this exporter using the provided dockerfile. It will embed the `api_commands.yaml` present in the repository. You may also create a `config.yaml` file at the root of the repository if you want to embed a config into the image. Alternatively, you can provide a configuration file with another mechanisme (e.g. bind mount, Kubernetes configmap, etc.).
+You can build and run a docker image of this exporter using the provided dockerfile. It will embed the `api_commands.yaml` present in the repository. You may also create a `config.yaml` file at the root of the repository if you want to embed a config into the image. Alternatively, you can provide a configuration file with another mechanism (e.g. bind mount, Kubernetes configmap, etc.).
 
 ### Using automatically built images
 
-Images available on the Docker Hub (`enix/arista-eapi-exporter`) and on Github Container Registry (`ghcr.io/enix/arista-eapi-exporter`) are autmatically built on each tagged version of this repository. They use the provided `api_commands.yaml` but do not embed any configuration.
+Images available on the Docker Hub (`enix/arista-eapi-exporter`) and on Github Container Registry (`ghcr.io/enix/arista-eapi-exporter`) are automatically built on each tagged version of this repository. They use the provided `api_commands.yaml` but do not embed any configuration.
 
 On these two image repositories, `latest` is the latest tag, there is no automatic nightly build.
 
