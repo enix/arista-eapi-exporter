@@ -197,7 +197,7 @@ def main():  # pylint: disable=missing-function-docstring
         action="append",
         nargs=2,
         metavar=("NAME", "VALUE"),
-        help="Additionnal label to export at host level (i.e. on all metrics). Can be repeated.",
+        help="Additional label to export at host level (i.e. on all metrics). Can be repeated.",
     )
 
     args = parser.parse_args()

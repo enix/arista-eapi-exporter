@@ -135,7 +135,7 @@ options:
   --listen-port LISTEN_PORT
                         HTTP port where the exporter will bind. Defaults to 9100.
   -l NAME VALUE, --label NAME VALUE
-                        Additionnal label to export at host level (i.e. on all metrics). Can be repeated.
+                        Additional label to export at host level (i.e. on all metrics). Can be repeated.
 ```
 
 In single mode, the exporter only polls one Arista device, but all the connection parameters can be provided using CLI arguments. This is useful if you want to deploy the exporter directly on your switches, leveraging Arista's Linux platform or Docker integration.
