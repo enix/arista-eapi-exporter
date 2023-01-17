@@ -31,7 +31,7 @@ There are other options (namely, UNIX socket and local HTTP server) but they pos
 ## How does this compare to ocprometheus or other exporters
 
 When it comes to setting up a Prometheus exporter for Arista switches, there are several other
-options, even some from Arista itself (such as [ocprometheus](https://github.com/aristanetworks/goarista/tree/master/cmd/ocprometheus)) you can consider.
+options you can consider, even some from Arista itself (such as [ocprometheus](https://github.com/aristanetworks/goarista/tree/master/cmd/ocprometheus)).
 The main goal this exporter tries to achieve is to allow users to customize by themselves which metrics
 is gathered from the target, without having to fork the repository and alter the code.
 
